@@ -101,17 +101,32 @@ class SideMenuViewController: UIViewController, UITableViewDataSource, UITableVi
         return self
     }
     
+    // サイドメニュー切り替えイベント
+    private var toggleSideMenuEvent: (Bool) -> Void = { _ in }
+    
+    public func setToggleSideMenuEvent(_ event: @escaping (Bool) -> Void) -> SideMenuViewController {
+        self.toggleSideMenuEvent = event;
+        return self
+    }
+    
+    private var alreadyInit = false;
+
     public func setupSideMenu() -> SideMenuViewController {
+        if (self.alreadyInit) {
+            return self;
+        }
+        
+        self.alreadyInit = true;
+        
         self.loadView()
         self.viewDidLoad()
 
-        self.viewTop.frame = CGRect(x: -self.view.frame.width, y: 0, width: self.view.frame.width, height: self.view.frame.height)
-        self.viewMain.frame = CGRect(x: -self.view.frame.width, y: 0, width: self.view.frame.width, height: self.view.frame.height)
-        
+        self.viewTop.frame = CGRect(x: -self.viewTop.frame.width, y: self.viewTop.frame.origin.y, width: self.viewTop.frame.width, height: self.viewTop.frame.height)
+        self.viewMain.frame = CGRect(x: -self.viewMain.frame.width, y: self.viewMain.frame.origin.y, width: self.viewMain.frame.width, height: self.viewMain.frame.height)
+
         // TabBarController 使用状態で RootViewController に表示しようとすると TabBar ボタンの位置がずれるのでしない
         self.baseViewController.view.addSubview(self.view)
-        self.baseViewController.addChild(self)
-        
+
         self.didMove(toParent: self.baseViewController)
         
         return self
@@ -126,24 +141,41 @@ class SideMenuViewController: UIViewController, UITableViewDataSource, UITableVi
     }
     
     public func showSideMenu() -> SideMenuViewController {
-        UIView.animate(withDuration: 0.3, animations: {
-            self.viewBackground.alpha = self.backgroundBrightness
+        self.view.isHidden = false;
+        
+        UIView.animate(
+            withDuration: 0.3,
+            animations: {
+                self.viewBackground.alpha = self.backgroundBrightness
             
-            self.viewTop.frame = CGRect(x: 0, y: 0, width: self.view.frame.width, height: self.view.frame.height)
-            self.viewMain.frame = CGRect(x: 0, y: 0, width: self.view.frame.width, height: self.view.frame.height)
-        })
-        self.isSideMenuVisible = true
+                self.viewTop.frame = CGRect(x: 0, y: self.viewTop.frame.origin.y, width: self.viewTop.frame.width, height: self.viewTop.frame.height)
+                self.viewMain.frame = CGRect(x: 0, y: self.viewMain.frame.origin.y, width: self.viewMain.frame.width, height: self.viewMain.frame.height)
+            },
+            completion: { _ in
+                self.isSideMenuVisible = true
+                self.toggleSideMenuEvent(self.isSideMenuVisible)
+            }
+        )
         
         return self
     }
     
     public func hideSideMenu() -> SideMenuViewController {
-        UIView.animate(withDuration: 0.3, animations: {
-            self.viewBackground.alpha = 0
+        UIView.animate(
+            withDuration: 0.3,
+            animations: {
+                self.viewBackground.alpha = 0
 
-            self.view.frame = CGRect(x: -self.view.frame.width, y: 0, width: self.view.frame.width, height: self.view.frame.height)
-        })
-        self.isSideMenuVisible = false
+                self.viewTop.frame = CGRect(x: -self.viewTop.frame.width, y: self.viewTop.frame.origin.y, width: self.viewTop.frame.width, height: self.viewTop.frame.height)
+                self.viewMain.frame = CGRect(x: -self.viewMain.frame.width, y: self.viewMain.frame.origin.y, width: self.viewMain.frame.width, height: self.viewMain.frame.height)
+            },
+            completion: { _ in
+                self.view.isHidden = true;
+
+                self.isSideMenuVisible = false
+                self.toggleSideMenuEvent(self.isSideMenuVisible)
+            }
+        )
         
         return self
     }
